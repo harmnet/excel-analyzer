@@ -26,6 +26,14 @@ from docx import Document
 from docx.shared import Pt, Inches
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 
+# 尝试导入siliconflow库
+try:
+    import siliconflow
+    SILICON_FLOW_AVAILABLE = True
+except ImportError:
+    SILICON_FLOW_AVAILABLE = False
+    print("警告: 未能导入siliconflow库，硅基流动API功能将不可用。如需使用，请安装: pip install siliconflow")
+
 # PyQt5导入
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, 
@@ -680,13 +688,17 @@ class AnalysisWorker(QThread):
                         elif model_api_type == "siliconflow":
                             # 发送请求到硅基流动API
                             try:
-                                # 注释掉API详细信息的日志
-                                # self.signals.update_progress.emit(f"正在发送批次 {i+1}/{num_batches} 到硅基流动API [模型: {model_name}]...")
+                                # 首先检查siliconflow库是否可用
+                                if not SILICON_FLOW_AVAILABLE:
+                                    raise ImportError("硅基流动API库(siliconflow)未安装。请使用pip install siliconflow安装该库，或选择其他模型。")
+                                
+                                # 打印API请求信息
+                                self.signals.update_progress.emit(f"正在发送最终分析请求到硅基流动API [模型: {model_name}]...")
                                 
                                 # 尝试使用简化版API客户端，避免400错误
                                 try:
-                                    # 注释掉API客户端详细信息的日志
-                                    # self.signals.update_progress.emit("尝试使用简化版API客户端发送请求...")
+                                    # 初始化简化版API客户端
+                                    self.signals.update_progress.emit("尝试使用简化版API客户端发送最终分析请求...")
                                     simplified_client = SimplifiedSiliconFlowAPI(api_key=api_key)
                                     
                                     # 发送请求
@@ -923,6 +935,10 @@ class AnalysisWorker(QThread):
                         elif model_api_type == "siliconflow":
                             # 发送请求到硅基流动API
                             try:
+                                # 首先检查siliconflow库是否可用
+                                if not SILICON_FLOW_AVAILABLE:
+                                    raise ImportError("硅基流动API库(siliconflow)未安装。请使用pip install siliconflow安装该库，或选择其他模型。")
+                                
                                 # 打印API请求信息
                                 self.signals.update_progress.emit(f"正在发送最终分析请求到硅基流动API [模型: {model_name}]...")
                                 
@@ -965,6 +981,15 @@ class AnalysisWorker(QThread):
                                             model_name=model_name
                                         )
                                         self.signals.update_progress.emit("直接API请求成功!")
+                            except ImportError as e:
+                                # 特别处理库导入错误
+                                error_msg = str(e)
+                                self.signals.error.emit(f"错误：不支持的API类型 siliconflow 或缺少必要的库: {error_msg}")
+                                return
+                            except Exception as e:
+                                # 处理其他所有错误
+                                self.signals.error.emit(f"硅基流动API请求失败: {str(e)}")
+                                return
                                 
                                 # 获取分析结果
                                 analysis_result = response.get("choices", [{}])[0].get("message", {}).get("content", "")
@@ -979,20 +1004,6 @@ class AnalysisWorker(QThread):
                                     self.signals.update_progress.emit(f"- 输入tokens: {usage.get('prompt_tokens', 'N/A')}")
                                     self.signals.update_progress.emit(f"- 输出tokens: {usage.get('completion_tokens', 'N/A')}")
                                     self.signals.update_progress.emit(f"- 总tokens: {usage.get('total_tokens', 'N/A')}")
-                            except Exception as e:
-                                error_msg = str(e)
-                                self.signals.update_progress.emit(f"硅基流动API最终分析请求失败: {error_msg}")
-                                
-                                # 提供更详细的硅基流动API错误信息和建议
-                                if "401" in error_msg and "Unauthorized" in error_msg:
-                                    self.signals.update_progress.emit("\n[API密钥错误] 401 Unauthorized表示认证失败，可能原因:")
-                                    self.signals.update_progress.emit("1. API密钥格式不正确 - 应为纯密钥格式，如'sk-xxx'")
-                                    self.signals.update_progress.emit("2. API密钥已过期或被禁用")
-                                    self.signals.update_progress.emit("3. API密钥权限不足，无法访问请求的资源或模型")
-                                    self.signals.update_progress.emit("\n请在高级设置中检查并更新您的API密钥")
-                                
-                                # 重新抛出异常，让外层错误处理捕获
-                                raise
                         
                         elif model_api_type == "volcano":
                             # 发送请求到火山引擎API

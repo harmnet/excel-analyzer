@@ -21,8 +21,14 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
+        echo "Installing requirements from requirements.txt..."
         pip install -r requirements.txt
+        echo "Installing additional packages..."
         pip install pyinstaller pillow
+        echo "Explicitly installing siliconflow..."
+        pip install siliconflow
+        echo "Listing all installed packages for debugging..."
+        pip list
     
     - name: Create icon
       run: |
@@ -46,7 +52,9 @@ jobs:
     
     - name: Build with PyInstaller
       run: |
-        pyinstaller --name="Excel数据集异常值分析工具" --onefile --windowed --clean --icon=temp_build/app_icon.ico excel_analyzer_gui.py
+        echo "Starting PyInstaller build..."
+        pyinstaller --name="Excel数据集异常值分析工具" --onefile --windowed --clean --icon=temp_build/app_icon.ico --hidden-import=siliconflow excel_analyzer_gui.py
+        echo "PyInstaller build completed"
     
     - name: Upload artifact
       uses: actions/upload-artifact@v4
