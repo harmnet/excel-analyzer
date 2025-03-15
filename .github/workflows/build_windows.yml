@@ -49,7 +49,7 @@ jobs:
         pyinstaller --name="Excel数据集异常值分析工具" --onefile --windowed --clean --icon=temp_build/app_icon.ico excel_analyzer_gui.py
     
     - name: Upload artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: excel-analyzer
         path: dist/*.exe
