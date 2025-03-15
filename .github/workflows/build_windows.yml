@@ -1,0 +1,56 @@
+name: Build Windows Executable
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:  # 允许手动触发
+
+jobs:
+  build:
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pyinstaller pillow
+    
+    - name: Create icon
+      run: |
+        python -c "
+        from PIL import Image, ImageDraw
+        import os
+        
+        # 创建目录
+        os.makedirs('temp_build', exist_ok=True)
+        
+        # 创建一个128x128的图像
+        img = Image.new('RGBA', (128, 128), color=(255, 255, 255, 0))
+        draw = ImageDraw.Draw(img)
+        
+        # 绘制一个简单的图标 - 紫荆红色的圆形
+        draw.ellipse((10, 10, 118, 118), fill=(158, 33, 65, 255))
+        
+        # 保存为ICO文件
+        img.save('temp_build/app_icon.ico', format='ICO')
+        "
+    
+    - name: Build with PyInstaller
+      run: |
+        pyinstaller --name="Excel数据集异常值分析工具" --onefile --windowed --clean --icon=temp_build/app_icon.ico excel_analyzer_gui.py
+    
+    - name: Upload artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: excel-analyzer
+        path: dist/*.exe
+        retention-days: 30  # 保留30天 

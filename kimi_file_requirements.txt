@@ -1,0 +1,7 @@
+openai>=1.0.0
+pathlib>=1.0.1 
+import os
+os.environ["MOONSHOT_API_KEY"] = "sk-uMgSk5k16xVya8DMUSpBH0inGDg0v42XT6bKLuqlTkbcJtTA" 
+
+from kimi_file_api import KimiFileAPI
+kimi_api = KimiFileAPI(api_key="sk-uMgSk5k16xVya8DMUSpBH0inGDg0v42XT6bKLuqlTkbcJtTA") 

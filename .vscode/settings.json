@@ -1,0 +1,5 @@
+{
+    "python.analysis.extraPaths": [
+        "./02 我的小工具集/自动出题"
+    ]
+}

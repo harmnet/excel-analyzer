@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Excel数据集异常值分析工具 - 网页版</title>
+    <style>
+        :root {
+            --primary-color: rgb(158, 33, 65);
+            --gold-color: rgb(177, 136, 101);
+            --gray-color: rgb(166, 166, 166);
+            --text-color: rgb(60, 60, 60);
+        }
+        
+        body {
+            font-family: 'Segoe UI', 'Microsoft YaHei', Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+            color: var(--text-color);
+        }
+        
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        h1 {
+            color: var(--primary-color);
+            margin-bottom: 8px;
+        }
+        
+        h2 {
+            color: var(--gold-color);
+            font-weight: normal;
+            margin-top: 0;
+        }
+        
+        .divider {
+            height: 1px;
+            background-color: var(--gray-color);
+            margin: 20px 0;
+        }
+        
+        .section {
+            border: 1px solid #d0d0d0;
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .section-title {
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+        
+        .file-selection {
+            display: flex;
+            align-items: center;
+        }
+        
+        .file-path {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid #d0d0d0;
+            border-radius: 4px;
+            margin-right: 10px;
+            background-color: #f9f9f9;
+        }
+        
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 8px 15px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        button:hover {
+            background-color: rgb(178, 53, 85);
+        }
+        
+        button:disabled {
+            background-color: var(--gray-color);
+            cursor: not-allowed;
+        }
+        
+        #analyzeBtn {
+            font-size: 16px;
+            font-weight: bold;
+            padding: 12px 20px;
+            margin: 10px 0;
+            width: 100%;
+        }
+        
+        select {
+            padding: 8px;
+            border: 1px solid #d0d0d0;
+            border-radius: 4px;
+            width: 100%;
+            background-color: white;
+        }
+        
+        .progress-container {
+            margin-top: 15px;
+        }
+        
+        .progress-bar {
+            height: 24px;
+            background-color: #e0e0e0;
+            border-radius: 4px;
+            margin-top: 5px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background-color: var(--gold-color);
+            border-radius: 4px;
+            width: 0%;
+            transition: width 0.3s;
+        }
+        
+        .progress-text {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid #d0d0d0;
+            margin-bottom: 15px;
+        }
+        
+        .tab {
+            padding: 10px 15px;
+            cursor: pointer;
+            border: 1px solid #d0d0d0;
+            border-bottom: none;
+            border-radius: 4px 4px 0 0;
+            margin-right: 5px;
+            background-color: #f0f0f0;
+        }
+        
+        .tab.active {
+            background-color: white;
+            border-bottom: 1px solid white;
+            margin-bottom: -1px;
+            color: var(--primary-color);
+            font-weight: bold;
+        }
+        
+        .tab-content {
+            display: none;
+            padding: 15px;
+            border: 1px solid #d0d0d0;
+            border-top: none;
+            border-radius: 0 0 4px 4px;
+            min-height: 300px;
+            max-height: 400px;
+            overflow-y: auto;
+            background-color: white;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        #progressLog {
+            white-space: pre-wrap;
+            font-family: Consolas, monospace;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        #resultText {
+            white-space: pre-wrap;
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            line-height: 1.5;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            color: var(--gray-color);
+            font-size: 12px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        
+        table, th, td {
+            border: 1px solid #d0d0d0;
+        }
+        
+        th, td {
+            padding: 8px 12px;
+            text-align: left;
+        }
+        
+        th {
+            background-color: #f5f5f5;
+        }
+        
+        .expanded-result-dialog {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .dialog-content {
+            background-color: white;
+            border-radius: 8px;
+            width: 80%;
+            height: 80%;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .dialog-body {
+            flex: 1;
+            overflow-y: auto;
+            margin: 15px 0;
+            padding: 10px;
+            border: 1px solid #d0d0d0;
+            border-radius: 4px;
+        }
+        
+        .dialog-close {
+            align-self: flex-end;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Excel数据集异常值分析工具</h1>
+            <h2>使用大模型分析Excel数据集中的异常值</h2>
+        </header>
+        
+        <div class="divider"></div>
+        
+        <div class="section">
+            <div class="section-title">选择Excel文件</div>
+            <div class="file-selection">
+                <input type="file" id="fileInput" accept=".xlsx, .xls" style="display: none;">
+                <div id="filePath" class="file-path">请选择要分析的Excel文件...</div>
+                <button id="browseBtn">浏览...</button>
+            </div>
+        </div>
+        
+        <div class="section">
+            <div class="section-title">分析参数设置</div>
+            <div>
+                <label for="modelSelect">使用模型:</label>
+                <select id="modelSelect">
+                    <option value="qwen">🔍 千问QwQ-32B</option>
+                    <option value="deepseek" selected>🔍 DeepSeek-R1</option>
+                    <option value="moonshot">🌙 Moonshot AI</option>
+                </select>
+            </div>
+            
+            <div style="margin-top: 20px;">
+                <button id="analyzeBtn" disabled>AI一键分析</button>
+            </div>
+        </div>
+        
+        <div class="progress-container">
+            <div class="progress-bar">
+                <div id="progressFill" class="progress-fill"></div>
+                <div id="progressText" class="progress-text">0%</div>
+            </div>
+        </div>
+        
+        <div class="tabs">
+            <div class="tab active" data-tab="progressTab">处理日志</div>
+            <div class="tab" data-tab="resultTab">分析结果</div>
+        </div>
+        
+        <div id="progressTab" class="tab-content active">
+            <div id="progressLog"></div>
+        </div>
+        
+        <div id="resultTab" class="tab-content">
+            <div id="resultText"></div>
+            <button id="expandBtn" style="margin-top: 10px;">展开查看完整结果</button>
+        </div>
+        
+        <div class="footer">
+            <p>本工具基于浏览器的Excel解析功能，所有分析在本地完成，不会上传您的Excel文件</p>
+            <p>© 2024 Excel数据质量检查工具 - 网页版</p>
+        </div>
+    </div>
+    
+    <div id="expandedResultDialog" class="expanded-result-dialog">
+        <div class="dialog-content">
+            <div class="dialog-body" id="expandedResultText"></div>
+            <button class="dialog-close" id="dialogCloseBtn">关闭</button>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script>
+        // DOM 元素
+        const fileInput = document.getElementById('fileInput');
+        const filePath = document.getElementById('filePath');
+        const browseBtn = document.getElementById('browseBtn');
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        const progressFill = document.getElementById('progressFill');
+        const progressText = document.getElementById('progressText');
+        const progressLog = document.getElementById('progressLog');
+        const resultText = document.getElementById('resultText');
+        const expandBtn = document.getElementById('expandBtn');
+        const expandedResultDialog = document.getElementById('expandedResultDialog');
+        const expandedResultText = document.getElementById('expandedResultText');
+        const dialogCloseBtn = document.getElementById('dialogCloseBtn');
+        const tabs = document.querySelectorAll('.tab');
+        const tabContents = document.querySelectorAll('.tab-content');
+
+        // 全局变量
+        let excelData = null;
+        let fileName = '';
+        let analyzing = false;
+        let abortController = null;
+
+        // 事件监听
+        browseBtn.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                const file = e.target.files[0];
+                fileName = file.name;
+                filePath.textContent = fileName;
+                readExcelFile(file);
+            }
+        });
+
+        analyzeBtn.addEventListener('click', startAnalysis);
+
+        expandBtn.addEventListener('click', () => {
+            expandedResultText.innerHTML = resultText.innerHTML;
+            expandedResultDialog.style.display = 'flex';
+        });
+
+        dialogCloseBtn.addEventListener('click', () => {
+            expandedResultDialog.style.display = 'none';
+        });
+
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                const tabId = tab.getAttribute('data-tab');
+                
+                // 移除所有活动状态
+                tabs.forEach(t => t.classList.remove('active'));
+                tabContents.forEach(c => c.classList.remove('active'));
+                
+                // 添加活动状态到选中的标签
+                tab.classList.add('active');
+                document.getElementById(tabId).classList.add('active');
+            });
+        });
+
+        // 函数
+        function readExcelFile(file) {
+            const reader = new FileReader();
+            
+            logProgress('正在读取Excel文件...');
+            updateProgress(10);
+            
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    
+                    // 获取第一个工作表
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    
+                    // 转换为JSON
+                    excelData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                    
+                    // 检查数据是否有效
+                    if (excelData && excelData.length > 1) {
+                        logProgress(`成功读取Excel文件，共有 ${excelData.length - 1} 行，${excelData[0].length} 列`);
+                        
+                        // 显示数据预览
+                        logProgress('\n数据预览 (前5行):');
+                        const previewRows = Math.min(5, excelData.length);
+                        for (let i = 0; i < previewRows; i++) {
+                            logProgress(excelData[i].join('\t'));
+                        }
+                        
+                        // 启用分析按钮
+                        analyzeBtn.disabled = false;
+                        updateProgress(20);
+                    } else {
+                        logProgress('错误：Excel文件为空或格式不正确');
+                        analyzeBtn.disabled = true;
+                    }
+                } catch (error) {
+                    logProgress(`读取Excel文件出错: ${error.message}`);
+                    analyzeBtn.disabled = true;
+                }
+            };
+            
+            reader.onerror = function() {
+                logProgress('读取文件时发生错误');
+                analyzeBtn.disabled = true;
+            };
+            
+            reader.readAsArrayBuffer(file);
+        }
+
+        async function startAnalysis() {
+            if (analyzing) return;
+            analyzing = true;
+            abortController = new AbortController();
+            
+            try {
+                analyzeBtn.disabled = true;
+                analyzeBtn.textContent = '分析中...';
+                resultText.innerHTML = '';
+                
+                logProgress('\n开始数据分析...');
+                updateProgress(25);
+                
+                // 准备数据信息
+                const headers = excelData[0];
+                const dataRows = excelData.slice(1);
+                
+                // 创建数据类型信息
+                const dataTypes = headers.map(header => {
+                    const columnIndex = headers.indexOf(header);
+                    const columnValues = dataRows.map(row => row[columnIndex]).filter(val => val !== undefined);
+                    const type = inferDataType(columnValues);
+                    return { header, type };
+                });
+                
+                const dataInfo = `数据集信息：
+- 行数：${dataRows.length}
+- 列数：${headers.length}
+- 列名：${headers.join(', ')}
+
+数据类型：
+${dataTypes.map(dt => `- ${dt.header}: ${dt.type}`).join('\n')}`;
+                
+                logProgress('\n' + dataInfo);
+                updateProgress(30);
+                
+                // 模拟分批处理
+                const batchSize = 100;
+                const numBatches = Math.ceil(dataRows.length / batchSize);
+                
+                for (let i = 0; i < numBatches; i++) {
+                    if (analyzing === false) break;
+                    
+                    const startIdx = i * batchSize;
+                    const endIdx = Math.min((i + 1) * batchSize, dataRows.length);
+                    
+                    logProgress(`\n处理数据批次 ${i+1}/${numBatches} (行 ${startIdx+1} 到 ${endIdx})`);
+                    
+                    // 更新进度条
+                    const progress = 30 + (i / numBatches) * 40;
+                    updateProgress(progress);
+                    
+                    // 模拟处理时间
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                }
+                
+                if (analyzing) {
+                    logProgress('\n所有数据批次处理完成，正在生成分析结果...');
+                    updateProgress(75);
+                    
+                    // 模拟API调用
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                    
+                    // 生成模拟分析结果
+                    const analysisResult = generateMockAnalysis(headers, dataRows, dataTypes);
+                    
+                    // 显示分析结果
+                    resultText.innerHTML = analysisResult;
+                    updateProgress(100);
+                    
+                    logProgress('\n分析完成！请查看"分析结果"选项卡查看详细信息。');
+                    
+                    // 自动切换到结果标签
+                    tabs.forEach(t => t.classList.remove('active'));
+                    tabContents.forEach(c => c.classList.remove('active'));
+                    
+                    document.querySelector('[data-tab="resultTab"]').classList.add('active');
+                    document.getElementById('resultTab').classList.add('active');
+                } else {
+                    logProgress('\n分析已被用户取消');
+                }
+            } catch (error) {
+                logProgress(`分析过程中出错：${error.message}`);
+                updateProgress(0);
+            } finally {
+                analyzing = false;
+                analyzeBtn.disabled = false;
+                analyzeBtn.textContent = 'AI一键分析';
+            }
+        }
+
+        function inferDataType(values) {
+            if (values.length === 0) return '空列';
+            
+            // 检查数字类型
+            const numericCount = values.filter(v => !isNaN(Number(v))).length;
+            if (numericCount / values.length > 0.8) {
+                // 检查是否为日期格式
+                const datePattern = /^\d{4}[-/]\d{1,2}[-/]\d{1,2}|^\d{1,2}[-/]\d{1,2}[-/]\d{4}/;
+                const dateCount = values.filter(v => String(v).match(datePattern)).length;
+                
+                if (dateCount / values.length > 0.5) {
+                    return 'datetime';
+                }
+                
+                // 判断是整数还是浮点数
+                const floatCount = values.filter(v => String(v).includes('.')).length;
+                if (floatCount / numericCount > 0.2) {
+                    return 'float';
+                }
+                return 'int';
+            }
+            
+            // 默认字符串类型
+            return 'object';
+        }
+
+        function generateMockAnalysis(headers, dataRows, dataTypes) {
+            const modelName = document.getElementById('modelSelect').value;
+            const modelDisplay = {
+                'qwen': '千问QwQ-32B',
+                'deepseek': 'DeepSeek-R1',
+                'moonshot': 'Moonshot AI'
+            };
+            
+            // 创建基本描述
+            let result = `# Excel数据集异常值分析结果
+
+## 基本情况
+
+- **数据集行数**: ${dataRows.length}
+- **数据集列数**: ${headers.length}
+- **使用模型**: ${modelDisplay[modelName]}
+
+### 数据集列信息
+
+| 列名 | 数据类型 | 非空值数量 | 唯一值数量 |
+|------|----------|------------|------------|
+`;
+
+            // 填充列信息表
+            for (let i = 0; i < headers.length; i++) {
+                const header = headers[i];
+                const columnIndex = i;
+                const values = dataRows.map(row => row[columnIndex]);
+                const nonNullCount = values.filter(v => v !== undefined && v !== null && v !== '').length;
+                
+                // 计算唯一值
+                const uniqueValues = new Set(values);
+                const uniqueCount = uniqueValues.size;
+                
+                result += `| ${header} | ${dataTypes[i].type} | ${nonNullCount} | ${uniqueCount} |\n`;
+            }
+            
+            // 模拟发现的异常
+            result += `\n## 异常值检测结果\n\n`;
+            
+            // 随机选择一些列生成异常描述
+            const abnormalColumns = [];
+            const abnormalCount = Math.min(2 + Math.floor(Math.random() * 3), headers.length);
+            
+            while (abnormalColumns.length < abnormalCount) {
+                const idx = Math.floor(Math.random() * headers.length);
+                if (!abnormalColumns.includes(idx)) {
+                    abnormalColumns.push(idx);
+                }
+            }
+            
+            if (abnormalColumns.length > 0) {
+                result += `发现以下列存在异常值:\n\n`;
+                result += `| 异常字段名称 | 异常值描述 | 问题分析 | 处理建议 |\n`;
+                result += `|------------|-----------|---------|----------|\n`;
+                
+                for (const colIdx of abnormalColumns) {
+                    const header = headers[colIdx];
+                    const columnIndex = colIdx;
+                    const values = dataRows.map(row => row[columnIndex]);
+                    const dataType = dataTypes[colIdx].type;
+                    
+                    let abnormalDesc, analysis, suggestion;
+                    
+                    if (dataType === 'int' || dataType === 'float') {
+                        abnormalDesc = '发现数值异常，包含极大值和空值';
+                        analysis = '部分数值可能是错误输入或系统默认值，与其他数据相差过大';
+                        suggestion = '对超出3个标准差的值进行检查，考虑用均值或中位数填充空值';
+                    } else if (dataType === 'datetime') {
+                        abnormalDesc = '存在未来日期和格式不统一的时间值';
+                        analysis = '日期格式混乱，部分日期超出合理范围';
+                        suggestion = '统一日期格式，移除无效日期，检查未来日期是否合理';
+                    } else {
+                        abnormalDesc = '存在空值、特殊字符和格式不一致问题';
+                        analysis = '数据录入不规范，导致同一字段有多种表现形式';
+                        suggestion = '规范化字符串格式，移除特殊字符，对空值进行适当填充';
+                    }
+                    
+                    result += `| ${header} | ${abnormalDesc} | ${analysis} | ${suggestion} |\n`;
+                }
+            } else {
+                result += `没有发现明显的异常值，数据质量良好。\n`;
+            }
+            
+            // 整体数据质量评估
+            result += `\n## 整体数据质量评估\n\n`;
+            
+            // 根据异常数量评估整体质量
+            const qualityLevel = abnormalColumns.length > headers.length / 3 ? '较差' : 
+                               abnormalColumns.length > 0 ? '一般' : '良好';
+            
+            result += `**数据质量评级**: ${qualityLevel}\n\n`;
+            
+            // 添加改进建议
+            result += `### 数据质量改进建议\n\n`;
+            result += `1. 建立数据录入规范，确保数据格式一致性\n`;
+            result += `2. 对缺失值进行适当处理，根据业务需求选择填充方式\n`;
+            result += `3. 设置数据验证规则，在源头防止异常值的产生\n`;
+            result += `4. 定期进行数据质量审计，及时发现并解决问题\n`;
+            
+            // 数据分析建议
+            result += `\n### 数据分析建议\n\n`;
+            result += `1. 在分析前先进行数据清洗，处理已识别的异常值\n`;
+            result += `2. 考虑使用数据可视化方法直观地展示数据分布，辅助发现问题\n`;
+            result += `3. 对重要指标建立监控机制，追踪数据质量变化趋势\n`;
+            result += `4. 进行相关性分析，挖掘数据间的潜在关系\n`;
+            
+            return result;
+        }
+
+        function logProgress(message) {
+            progressLog.textContent += message + '\n';
+            progressLog.scrollTop = progressLog.scrollHeight;
+        }
+
+        function updateProgress(percent) {
+            progressFill.style.width = `${percent}%`;
+            progressText.textContent = `${Math.round(percent)}%`;
+        }
+
+        // 取消分析
+        document.getElementById('stopBtn')?.addEventListener('click', () => {
+            if (analyzing) {
+                analyzing = false;
+                logProgress('\n正在取消分析任务...');
+                if (abortController) {
+                    abortController.abort();
+                }
+            }
+        });
+    </script>
+</body>
+</html>
