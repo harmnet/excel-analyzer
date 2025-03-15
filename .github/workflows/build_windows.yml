@@ -25,8 +25,8 @@ jobs:
         pip install -r requirements.txt
         echo "Installing additional packages..."
         pip install pyinstaller pillow
-        echo "Explicitly installing siliconflow..."
-        pip install siliconflow
+        echo "Explicitly installing siliconflow and requests..."
+        pip install siliconflow requests
         echo "Listing all installed packages for debugging..."
         pip list
     
@@ -53,7 +53,7 @@ jobs:
     - name: Build with PyInstaller
       run: |
         echo "Starting PyInstaller build..."
-        pyinstaller --name="Excel数据集异常值分析工具" --onefile --windowed --clean --icon=temp_build/app_icon.ico --hidden-import=siliconflow excel_analyzer_gui.py
+        pyinstaller --name="Excel数据集异常值分析工具" --onefile --windowed --clean --icon=temp_build/app_icon.ico --hidden-import=siliconflow --hidden-import=requests --hidden-import=json --hidden-import=re excel_analyzer_gui.py
         echo "PyInstaller build completed"
     
     - name: Upload artifact

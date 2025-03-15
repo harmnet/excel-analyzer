@@ -6,3 +6,4 @@ PyQt5>=5.15.4
 Pillow>=8.2.0  # 用于创建图标
 pyinstaller>=5.6.2  # 用于打包 
 siliconflow>=0.1.0  # 用于支持硅基流动API 
+requests>=2.25.1  # 用于API请求 
